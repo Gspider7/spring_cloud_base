@@ -1,0 +1,108 @@
+spring:
+  application:
+    name: zuul
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+server:
+  port: 7070
+#  tomcat:
+#    max-threads: 64                           # tomcat最大工作线程数
+#    min-spare-threads: 32                     # tomcat最小工作线程数
+
+  # 使用undertow替换tomcat，undertow性能比jetty，tomcat好
+  undertow:
+    io-threads: 20          # 负责非阻塞IO的线程数，每个线程会负责多个连接，默认设置每个CPU核心一个线程
+    worker-threads: 50      # 阻塞任务线程池，用于处理servlet请求等阻塞任务，值设置取决于系统的负载（zuul线程隔离模式似乎没有同步阻塞请求？）
+    buffer-size: 1024       # IO的缓冲buff大小
+    direct-buffers: true    # 是否分配直接内存
+
+# zuul注册到eureka注册中心的配置
+# 注册好的zuul能够发现注册到eureka注册中心的服务，并提供服务路由
+# 比如eureka-client提供的服务会被路由到：http://localhost:7010/eureka-client/
+eureka:
+  client:
+    registry-fetch-interval-seconds: 5              # 向服务中心请求服务注册信息的间隔时间，默认为30秒
+    service-url:                                    # 服务注册的请求地址
+      defaultZone: http://admin:123456@192.168.1.50:8761/eureka/
+
+
+# 根据服务id映射服务路由，所有服务统一映射到zuul的域名下，解决了微服务反向代理问题
+# 一台zuul2服务器能处理的并发量在1w左右，受cpu性能影响
+zuul:
+  sensitive-headers:                      # zuul默认过滤一些敏感头信息："Cookie", "Set-Cookie", "Authorization"
+                                          # 这里设置为空表示不需要过滤
+                                          # 如果不过滤Cookie，那么所有被请求的服务器都会收到同一域名（zuul域名）的cookie
+  ignored-services:                       # 不进行路由的服务集合（服务过滤）
+  routes:
+    api-a:
+      path: /testPath/**                  # 定义一个api请求路径，请求示例：http://localhost:7010/testPath/service/list
+                                          # 如果不对服务自定义请求路径，默认路径为：http://localhost:7010/EUREKA-CLIENT/service/list
+      serviceId: EUREKA-CLIENT            # 请求路径绑定的服务id
+      sensitive-headers:                  # 针对具体的服务请求，过滤敏感头信息
+
+  retryable: true                         # 全局开启hystrix重试(默认为false)，可以用zuul.routes.<route>.retryable开关指定路由的重试
+  ribbonIsolationStrategy: THREAD         # 设置Hystrix隔离策略为线程池（默认为信号量隔离策略SEMAPHORE）
+  thread-pool:
+    use-separate-thread-pools: true       # 针对每个服务使用独立的线程池路由，默认为false
+
+# hystrix不仅提供了超时熔断，还实现了线程隔离
+# 所谓线程隔离，实际上是对于每一个服务id，都提供一个独立的线程池，这样可以很大程度降低单个服务异常对系统造成的影响
+# 每个线程池都实现了并发支持，允许对同步服务实现异步访问，同时可以通过分布式配置中心动态分配每个服务的性能（线程池容量）
+# 线程池的线程切换回带来性能消耗（10ms左右），因此hystrix还支持基于信号量的性能分配
+hystrix:
+  threadpool:
+    default:
+      coreSize: 100                       # 线程池隔离模式，每个线程池的线程数
+      maximumSize: 5000                   # 线程池最大线程数
+      allowMaximumSizeToDivergeFromCoreSize: true     # 允许最大线程数和核心线程数不同，空闲的线程会按一定策略被回收
+      maxQueueSize: -1                    # 线程池的等待队列大小，-1代表使用SynchronousQueue队列，它是一个先进先出的任务管道，内部没有容量
+  command:
+    default:
+      execution:
+        timeout:
+          enabled: true
+          thread:
+            timeoutInMilliseconds: 80000    # hystrix降级超时阈值，hystrix的超时时间应该大于ribbon全部重试时间的总和
+                                            # 1.4版本后，信号量隔离模式也支持hystrix超时，超时会触发fallback和信号量减一
+                                            # 信号量模式的应用：接口响应快（10ms级别，不适用于网络接口），并发需求不大（因为是同步http调用，参考tomcat的700连接容量）
+                                            # 只有通过异步调用具体服务，才能保证zuul的高并发，参考图：zuul2.0架构.png
+
+# 针对服务id的Ribbon超时重试配置，也可以全局配置
+# 注意：如果发生了重试，重试之前的请求结果将被丢弃，所以超时请求的重试可能永远不会成功返回
+# 默认设置是针对http返回状态404进行重试，别的状态不会重试（超时也会重试）
+# 测试404：启动2个服务提供者，然后关闭一个
+# 测试500：启动一个正常服务提供者，一个抛异常的提供者（500）
+EUREKA-CLIENT:
+  ribbon:
+    retryableStatusCodes: 404,500             # 针对状态码404和560进行重试
+    # 建立socket超时时间，毫秒，默认为2000
+    ConnectTimeout: 10000
+    # 读取socket响应超时时间，毫秒，默认为5000（这个值应该大于平均响应时间20%~100%，根据压力测试调整）
+    ReadTimeout: 3000
+    # 服务列表刷新间隔
+    ServerListRefreshInterval: 2000
+    # 同一台实例最大重试次数,不包括首次调用
+    MaxAutoRetries: 0
+    # 重试负载均衡其他的实例最大重试次数,不包括首次server
+    MaxAutoRetriesNextServer: 1
+    # 是否所有操作都重试，POST请求注意多次提交错误。
+    # 默认false，设定为false的话，只有get请求会重试
+    OkToRetryOnAllOperations: true
+
+
+# 使用okhttp替换默认的apache httpClient
+ribbon:
+  http:
+    client:
+      enabled: false
+  okhttp:
+    enabled: true
+
+
+# 指定logback配置文件
+logging:
+  config: classpath:log/logback-spring.xml
