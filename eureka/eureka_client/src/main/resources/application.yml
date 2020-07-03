@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: eureka-client
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 500Mb          # 最大上传文件大小，默认1M
+      max-request-size: 1000Mb      # 最大请求体大小，默认10M
+server:
+  port: 7000
+
+# eureka服务注册客户端的配置
+eureka:
+  instance:
+    prefer-ip-address: true                 # 注册的服务地址会用ip地址表示，而不是用hostname
+  client:
+    service-url:    # 服务注册的请求地址
+      defaultZone: http://admin:123456@127.0.0.1:8761/eureka/

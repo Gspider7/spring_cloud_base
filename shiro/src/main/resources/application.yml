@@ -1,0 +1,80 @@
+server:
+  port: 7050
+
+spring:
+  application:
+    name: shiro
+
+  thymeleaf:
+    cache: false
+
+  datasource:
+    druid:
+      driverClassName: com.mysql.jdbc.Driver
+      url:  jdbc:mysql://localhost:3306/test?useUnicode=true&characterEncoding=utf8
+      username: root
+      password: 123456
+      initialSize: 5
+      minIdle: 5
+      maxActive: 20
+      maxWait: 60000                                # 获取连接的超时等待时间
+      timeBetweenEvictionRunsMillis: 60000          # 检查要关闭的空闲连接
+      min-evictableIdleTimeMillis: 30000            # 连接空闲多久后关闭
+      validationQuery: SELECT 1
+      testWhileIdle: true
+      testOnBorrow: false
+      testOnReturn: false
+      poolPreparedStatements: true
+
+
+      filter:                                       # 慢查询配置
+        stat:
+          slow-sql-millis: 5000
+          log-slow-sql: true
+          merge-sql: true
+
+      # druid监控
+      statViewServlet:                              # 默认登录地址：ip:port/druid/login.html
+        loginUsername:  admin
+        loginPassword:  admin
+
+
+  # redis连接池配置
+  redis:
+    host: localhost
+    port: 6379
+    database: 0
+    password: ayufan
+    lettuce:
+      pool:
+        max-active:  10             # 连接池最大连接数（使用负值表示没有限制），由于连接线程安全，所以池不需要很大
+        max-idle: 5                 # 连接池中的最大空闲连接
+        min-idle: 1                 # 连接池中的最小空闲连接
+        max-wait: -1ms              # 获取连接的最大等待时间（使用负值表示没有限制）
+    timeout: 10000ms            # redis连接超时时间（使用负值表示没有限制）
+
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://admin:123456@192.168.1.50:8761/eureka/
+
+# mybatis路径配置
+mybatis:
+  mapper-locations: classpath:mapping/*.xml
+  type-aliases-package: com.acrobat.shiro.entity
+
+
+#pagehelper
+pagehelper:
+  helperDialect: mysql
+  reasonable: true
+  supportMethodsArguments: true
+  params: count=countSql
+
+
+
+
+

@@ -1,0 +1,72 @@
+spring:
+  application:
+    name: eureka-consumer
+server:
+  port: 7002
+
+# eureka服务消费者的配置
+eureka:
+  client:
+    register-with-eureka: false
+    service-url:                          # 服务注册的请求地址
+      defaultZone: http://admin:123456@127.0.0.1:8761/eureka/
+
+
+# feign配置
+feign:
+  hystrix:
+    enabled: true                         # 开启熔断支持，默认值是false
+  client:
+    config:
+      default:
+        connectTimeout: 3000              # feign的配置会被ribbon和hystrix的配置覆盖，包括超时、重试等
+        readTimeout: 10000                # 所以这个配置项不会生效，另外，feign重试默认是关闭的
+
+hystrix:
+  command:
+    default:                              # 全局配置
+      execution:
+        timeout:
+          enabled: true
+      isolation:
+        strategy: threadPool              # 官方推荐使用线程池隔离，不推荐信号量隔离
+        thread:
+          timeoutInMilliseconds: 7000     # 默认值是1000，为了防止ribbon还在重试的时候fallback
+                                          # 设置为 >= (1+MaxAutoRetries+MaxAutoRetriesNextServer)*ReadTimeout 比较好
+      metrics:
+        rollingStats:
+          timeInMilliseconds: 10000       # 统计窗口长度，默认10s，hystrix的统计粒度是精确到方法，从hystrix dashboard可以观测统计信息
+      circuitBreaker:
+        requestVolumeThreshold: 20        # 统计窗口内，最少需要多少个请求才开启熔断判断
+        errorThresholdPercentage: 50      # 统计窗口内，请求失败率最低需要达到多少才能开启熔断
+        sleepWindowInMilliseconds: 5000   # 熔断开启后，睡眠窗口的时间，默认5s
+
+    ShiroClient#checkAuth(String,String): # 针对特定接口设置例外，接口配置格式与hystrix dashboard展示格式一致
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 10000
+
+  threadpool:
+    default:
+      coreSize: 10                        # 线程池容量，默认10，线程池的容量需要根据接口的QPS来设置，原则上越小越好
+                                          # 理论上需要保证 coreSize >= QPS * costPerRequest，最好保留一定余量
+      maxQueueSize: -1                    # 线程池等待队列长度，默认-1表示使用SynchronousQueue，配置正数时使用LinkedBlockingQueue
+      queueSizeRejectionThreshold: 5      # 超过多少等待时拒绝请求入队
+
+ribbon:
+  http:
+    client:
+      enabled: false
+  okhttp:
+    enabled: true                       # 使用okhttp替换默认的http客户端，这些可以链接的配置项位于与spring整合的包内
+
+  # ribbon默认超时配置，支持按服务的例外配置，配置key格式：${serviceId}.ribbon.xxx
+  ConnectTimeout: 1000                  # 这些不能链接的配置项参考ribbon-core包下的config目录
+  ReadTimeOut: 3000
+  MaxAutoRetries: 0
+  MaxAutoRetriesNextServer: 1
+
+
+
+

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.acrobat.shiro.dao.FilterChainConfigMapper">
+  <resultMap id="BaseResultMap" type="com.acrobat.shiro.entity.FilterChainConfig">
+    <result column="uri" jdbcType="VARCHAR" property="uri" />
+    <result column="filter_config" jdbcType="VARCHAR" property="filterConfig" />
+    <result column="sort" jdbcType="INTEGER" property="sort" />
+  </resultMap>
+  <insert id="insert" parameterType="com.acrobat.shiro.entity.FilterChainConfig">
+    insert into filter_chain_config (uri, filter_config, sort
+      )
+    values (#{uri,jdbcType=VARCHAR}, #{filterConfig,jdbcType=VARCHAR}, #{sort,jdbcType=INTEGER}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.acrobat.shiro.entity.FilterChainConfig">
+    insert into filter_chain_config
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="uri != null">
+        uri,
+      </if>
+      <if test="filterConfig != null">
+        filter_config,
+      </if>
+      <if test="sort != null">
+        sort,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="uri != null">
+        #{uri,jdbcType=VARCHAR},
+      </if>
+      <if test="filterConfig != null">
+        #{filterConfig,jdbcType=VARCHAR},
+      </if>
+      <if test="sort != null">
+        #{sort,jdbcType=INTEGER},
+      </if>
+    </trim>
+  </insert>
+
+    <select id="selectAll" resultMap="BaseResultMap" resultType="java.util.List">
+        select *
+        from filter_chain_config
+    </select>
+</mapper>

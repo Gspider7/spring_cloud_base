@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.acrobat.shiro.dao.PermissionMapper">
+  <resultMap id="BaseResultMap" type="com.acrobat.shiro.entity.Permission">
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="permission" jdbcType="VARCHAR" property="permission" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, permission
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from permission
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <insert id="insert" parameterType="com.acrobat.shiro.entity.Permission">
+    insert into permission (id, permission)
+    values (#{id,jdbcType=BIGINT}, #{permission,jdbcType=VARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.acrobat.shiro.entity.Permission">
+    insert into permission
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="permission != null">
+        permission,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=BIGINT},
+      </if>
+      <if test="permission != null">
+        #{permission,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.acrobat.shiro.entity.Permission">
+    update permission
+    <set>
+      <if test="permission != null">
+        permission = #{permission,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.acrobat.shiro.entity.Permission">
+    update permission
+    set permission = #{permission,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+</mapper>

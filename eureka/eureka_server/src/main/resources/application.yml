@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: eureka-server
+  security:
+    user:
+      name: admin
+      password: 123456
+
+server:
+  port: 8761                  # 注册中心http服务端口号，访问localhost:8761可以查看当前已注册的服务
+
+# eureka服务注册中心的配置
+eureka:
+  server:
+    enable-self-preservation: false                 # 关闭自我保护模式，服务提供者断开将被取消注册，生产环境不要配这个
+  instance:
+    hostname: localhost
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 5            # 服务心跳时间间隔，默认30秒
+    lease-expiration-duration-in-seconds: 15        # 多长时间没有收到客户端心跳，则认为服务已失效，默认90秒
+  client:
+    register-with-eureka: false                     # 是否向服务注册中心注册自己，默认会注册自己
+    fetch-registry: false                           # 是否检索服务
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+
+
