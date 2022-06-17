@@ -92,7 +92,7 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
-            <version>1.2.51</version>
+            <version>1.2.83</version>
         </dependency>
 
         <!-- logback依赖，如果想通过http访问日志文件，添加logback-access依赖 -->
